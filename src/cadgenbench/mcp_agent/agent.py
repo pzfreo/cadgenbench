@@ -113,6 +113,7 @@ def run_mcp_agent(
     total_tokens = 0
     stopped_reason = "max_iterations"
     t0 = time.monotonic()
+    _last_tool_name: str = ""  # for consecutive-render detection
 
     def _build_result(step: Path | None = None) -> McpAgentResult:
         return McpAgentResult(
@@ -187,8 +188,21 @@ def run_mcp_agent(
             tag = f"[turn {turn_idx}]"
             turn_t0 = time.monotonic()
 
+            # Inject budget status so the model can self-regulate.
+            elapsed = time.monotonic() - t0
+            remaining_turns = config.max_iterations - turn_idx
+            remaining_tokens = config.max_total_tokens - total_tokens
+            remaining_s = max(0.0, config.max_duration_s - elapsed)
+            messages.append({
+                "role": "user",
+                "content": (
+                    f"[Status: turn {turn_idx + 1}/{config.max_iterations}, "
+                    f"tokens used {total_tokens}/{config.max_total_tokens}, "
+                    f"time {elapsed:.0f}s/{config.max_duration_s:.0f}s]"
+                ),
+            })
+
             print(f"  {tag} Calling LLM…", end="", flush=True)
-            remaining_s = max(0.0, config.max_duration_s - (time.monotonic() - t0))
             if remaining_s < 1.0:
                 stopped_reason = "timeout"
                 break
@@ -340,6 +354,24 @@ def run_mcp_agent(
                 reasoning_tokens=completion.reasoning_tokens,
             ))
 
+            # Track last tool for consecutive-render detection.
+            if tool_records and not done_signaled:
+                this_tool = tool_records[-1].tool_name
+                if this_tool == "render_view" and _last_tool_name == "render_view":
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            "You just rendered without changing any geometry. "
+                            "Either call execute() to modify the model, or call "
+                            "export() and signal_done() if you are satisfied."
+                        ),
+                    })
+                _last_tool_name = this_tool
+
+            # Truncate base64 image data from old tool results to limit
+            # context growth — images are only useful when first seen.
+            _truncate_old_images(messages, keep_recent=3)
+
             # --- Check done signal -------------------------------------------
 
             if done_signaled:
@@ -385,6 +417,31 @@ def run_mcp_agent(
 def _supports_image_tool_results(model: str) -> bool:
     """True for providers known to accept image content in tool results."""
     return "anthropic" in model or "claude" in model
+
+
+def _truncate_old_images(messages: list[dict[str, Any]], keep_recent: int = 3) -> None:
+    """Replace base64 image data in old tool results with a placeholder.
+
+    Images are only useful when first seen; keeping them in every subsequent
+    prompt wastes tokens without adding information. We keep the ``keep_recent``
+    most recent image-bearing messages intact and strip the rest.
+    """
+    image_indices = [
+        i for i, m in enumerate(messages)
+        if isinstance(m.get("content"), list)
+        and any(
+            (b.get("type") == "image_url" or b.get("type") == "image")
+            for b in m["content"]
+        )
+    ]
+    to_truncate = image_indices[:-keep_recent] if len(image_indices) > keep_recent else []
+    for i in to_truncate:
+        content = messages[i]["content"]
+        messages[i]["content"] = [
+            b if b.get("type") not in ("image_url", "image")
+            else {"type": "text", "text": "[image omitted — already seen]"}
+            for b in content
+        ]
 
 
 def _append_seed_render(
