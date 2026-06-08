@@ -85,8 +85,8 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
                    help=(f"Command to launch the build123d-mcp server "
                          f"(default: {defaults.mcp_server_command!r}). "
                          "Use 'uvx' with --mcp-args build123d-mcp for uvx installs."))
-    p.add_argument("--mcp-args", nargs="*", default=defaults.mcp_server_args,
-                   help="Extra args passed to the MCP server command")
+    p.add_argument("--mcp-args", nargs=argparse.REMAINDER, default=defaults.mcp_server_args,
+                   help="Args passed to the MCP server command (must be last on the command line)")
     p.add_argument("--output-dir", type=Path, default=None,
                    help=f"Results directory (default: ./{_DEFAULT_OUTPUT_REL}/)")
     p.add_argument("--log-level", default="INFO",
