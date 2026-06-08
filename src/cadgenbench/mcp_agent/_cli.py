@@ -89,6 +89,9 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
                    help="Extra args passed to the MCP server command")
     p.add_argument("--output-dir", type=Path, default=None,
                    help=f"Results directory (default: ./{_DEFAULT_OUTPUT_REL}/)")
+    p.add_argument("--log-level", default="INFO",
+                   choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+                   help="Logging verbosity (default: INFO). INFO shows MCP call/reply lines.")
 
     p.set_defaults(handler=run)
 
@@ -100,7 +103,7 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
 def run(args: argparse.Namespace) -> int:
     """Execute ``cadgenbench mcp-agent run``."""
     logging.basicConfig(
-        level=logging.WARNING,
+        level=getattr(logging, args.log_level),
         format="%(levelname)s [%(name)s] %(message)s",
     )
 
