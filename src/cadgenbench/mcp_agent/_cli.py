@@ -67,6 +67,10 @@ def add_subparser(subparsers: argparse._SubParsersAction) -> None:
 
     p.add_argument("fixtures", nargs="*", help="Fixture name(s) from data/inputs/")
     p.add_argument("--all", action="store_true", help="Run all fixtures")
+    p.add_argument("--sample", type=int, default=None, metavar="N",
+                   help="Randomly sample N fixtures from all available (use with --all)")
+    p.add_argument("--seed", type=int, default=None,
+                   help="Random seed for --sample (default: non-deterministic)")
     p.add_argument("--limit", type=int, default=None, help="Max number of fixtures to run")
     p.add_argument("--model", default=defaults.model, help="LiteLLM model string")
     p.add_argument("--max-iter", type=int, default=defaults.max_iterations,
@@ -139,6 +143,8 @@ def run(args: argparse.Namespace) -> int:
         data_inputs_dir, data_gt_dir,
         names=args.fixtures or None,
         run_all=args.all,
+        sample=args.sample,
+        seed=args.seed,
         limit=args.limit,
     )
 

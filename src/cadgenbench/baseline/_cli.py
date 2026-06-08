@@ -239,6 +239,8 @@ def _discover_fixtures(
     names: list[str] | None = None,
     run_all: bool = False,
     limit: int | None = None,
+    sample: int | None = None,
+    seed: int | None = None,
 ) -> list[dict]:
     """Find fixtures under ``data/inputs/<fixture>/description.yaml``.
 
@@ -271,6 +273,14 @@ def _discover_fixtures(
     if not fixtures:
         print("No fixtures matched the given filters.", file=sys.stderr)
         sys.exit(1)
+
+    if sample is not None and len(fixtures) > sample:
+        import random
+        total = len(fixtures)
+        rng = random.Random(seed)
+        fixtures = rng.sample(fixtures, sample)
+        fixtures.sort(key=lambda f: f["name"])
+        print(f"Sampled {sample} of {total} fixtures (seed={seed}).", file=sys.stderr)
 
     if limit is not None and len(fixtures) > limit:
         print(f"Limiting to {limit} of {len(fixtures)} fixtures.", file=sys.stderr)
