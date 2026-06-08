@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import io
+import os
 import threading
 from typing import Any
 
@@ -130,8 +130,9 @@ class McpSession:
 
     async def _run_session(self) -> None:
         self._shutdown = asyncio.Event()
+        devnull = open(os.devnull, "w")
         try:
-            async with stdio_client(self._params, errlog=io.StringIO()) as (read, write):
+            async with stdio_client(self._params, errlog=devnull) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     resp = await session.list_tools()
@@ -144,6 +145,7 @@ class McpSession:
             self._ready.set()
         finally:
             self._session = None  # guard: call_tool() raises RuntimeError if session dies
+            devnull.close()
 
     async def _call_async(
         self, name: str, arguments: dict[str, Any]
