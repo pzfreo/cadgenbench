@@ -537,7 +537,9 @@ class LLMClient:
             prompt_tokens + completion_tokens
         )
 
-        if not content and completion_tokens > 0:
+        raw_tool_calls = getattr(message, "tool_calls", None) or None
+
+        if not content and completion_tokens > 0 and not raw_tool_calls:
             logger.warning(
                 "LLM returned empty content with %d completion tokens consumed "
                 "(reasoning_tokens=%s). Raise max_tokens if this is an open-weights "
@@ -545,8 +547,6 @@ class LLMClient:
                 completion_tokens,
                 reasoning_tokens,
             )
-
-        raw_tool_calls = getattr(message, "tool_calls", None) or None
         stop_reason = getattr(response.choices[0], "finish_reason", None) if response.choices else None
 
         return CompletionResult(
