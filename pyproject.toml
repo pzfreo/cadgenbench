@@ -71,3 +71,8 @@ pythonpath = ["src"]
 filterwarnings = [
     "ignore::DeprecationWarning:ezdxf",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
