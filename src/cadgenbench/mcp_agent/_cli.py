@@ -106,6 +106,9 @@ def run(args: argparse.Namespace) -> int:
         level=getattr(logging, args.log_level),
         format="%(levelname)s [%(name)s] %(message)s",
     )
+    # LiteLLM installs its own verbose handler; silence it to avoid duplicate lines.
+    logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+    logging.getLogger("LiteLLM Router").setLevel(logging.WARNING)
 
     from cadgenbench.common.paths import (
         data_inputs_dir as _data_inputs_dir,
