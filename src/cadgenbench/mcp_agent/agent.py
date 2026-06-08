@@ -287,7 +287,6 @@ def run_mcp_agent(
                 else:
                     t_call = time.monotonic()
                     print(f"  {tag} → {tool_name}(…)", end="", flush=True)
-                    logger.info("MCP call  tool=%s args=%s", tool_name, args)
                     try:
                         result_text, png_bytes = mcp.call_tool(tool_name, args)
                     except Exception as exc:
@@ -297,10 +296,8 @@ def run_mcp_agent(
                     had_image = png_bytes is not None
                     status = " [+img]" if had_image else ""
                     print(f" {duration_s:.1f}s{status}", flush=True)
-                    logger.info(
-                        "MCP reply tool=%s duration=%.2fs had_image=%s result_len=%d",
-                        tool_name, duration_s, had_image, len(result_text),
-                    )
+                    logger.info("MCP %-12s %.2fs  img=%-5s  %d chars",
+                                tool_name, duration_s, had_image, len(result_text))
 
                     # Build tool result content.  For Anthropic models,
                     # include the image inline; for others use text only.
