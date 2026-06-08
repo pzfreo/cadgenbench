@@ -80,7 +80,7 @@ uv sync --extra mcp-agent
 # This takes a few minutes on first run.
 # ---------------------------------------------------------------------------
 echo "==> Pre-warming build123d-mcp (Python 3.12) — this may take 5–10 min…"
-uvx --python 3.12 --upgrade build123d-mcp --help >/dev/null 2>&1 || true
+uvx --python 3.12 build123d-mcp@latest --help >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------------------------
 # Write env file
@@ -108,11 +108,11 @@ cat <<EOF
     source .env
     uv run cadgenbench mcp-agent run 101 \\
       --mcp-server uvx \\
-      --mcp-args --python 3.12 --upgrade build123d-mcp
+      --mcp-args --python 3.12 build123d-mcp@latest
 
     # Or run all fixtures in parallel:
     uv run cadgenbench mcp-agent run --all --parallel 4 \\
       --mcp-server uvx \\
-      --mcp-args --python 3.12 --upgrade build123d-mcp
+      --mcp-args --python 3.12 build123d-mcp@latest
 
 EOF
