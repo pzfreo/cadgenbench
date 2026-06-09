@@ -193,14 +193,26 @@ def run_mcp_agent(
             remaining_turns = config.max_iterations - turn_idx
             remaining_tokens = config.max_total_tokens - total_tokens
             remaining_s = max(0.0, config.max_duration_s - elapsed)
-            messages.append({
-                "role": "user",
-                "content": (
+            token_pct = total_tokens / config.max_total_tokens if config.max_total_tokens else 0
+
+            if token_pct >= 0.80 or remaining_turns <= 5:
+                # Hard escalation: force export now.
+                status_msg = (
+                    f"URGENT — turn {turn_idx + 1}/{config.max_iterations}, "
+                    f"{total_tokens}/{config.max_total_tokens} tokens used "
+                    f"({token_pct:.0%}). "
+                    f"Export whatever geometry you have RIGHT NOW using "
+                    f'export("{output_step}", format="step"), '
+                    f"then call signal_done(). Do not make any more changes."
+                )
+            else:
+                status_msg = (
                     f"[Status: turn {turn_idx + 1}/{config.max_iterations}, "
-                    f"tokens used {total_tokens}/{config.max_total_tokens}, "
+                    f"tokens used {total_tokens}/{config.max_total_tokens} "
+                    f"({token_pct:.0%}), "
                     f"time {elapsed:.0f}s/{config.max_duration_s:.0f}s]"
-                ),
-            })
+                )
+            messages.append({"role": "user", "content": status_msg})
 
             print(f"  {tag} Calling LLM…", end="", flush=True)
             if remaining_s < 1.0:
